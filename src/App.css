@@ -1,0 +1,108 @@
+.home {
+  padding: 2rem;
+}
+
+.logo-text {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #16213e;
+}
+
+.logo-icon {
+  color: #e94560;
+  margin-right: 0.5rem;
+}
+
+.film-card {
+  background: #fff;
+  border-radius: 12px;
+  color: #16213e;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid #e0e0e0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.film-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  border-color: #e94560;
+}
+
+.film-image {
+  height: 300px;
+  object-fit: cover;
+}
+
+.film-name {
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #16213e;
+  min-height: 3rem;
+}
+
+.film-episode {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0;
+}
+
+/* Navbar */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: #16213e;
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.nav-logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #e94560;
+}
+
+.nav-links {
+  display: flex;
+  list-style: none;
+  gap: 2rem;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-links a {
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 1rem;
+  transition: color 0.2s, opacity 0.2s;
+  opacity: 0.8;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+  color: #e94560;
+  opacity: 1;
+}
+
+.main-content {
+  min-height: calc(100vh - 60px);
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .nav-links {
+    gap: 1.5rem;
+  }
+
+  .logo-text {
+    font-size: 1.5rem;
+  }
+}
