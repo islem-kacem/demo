@@ -1,8 +1,15 @@
-import { useState, useEffect } from 'react';
-import { Card, Container, Row, Col, Button, Modal, Alert, Spinner } from 'react-bootstrap';
-import { api } from '../services/api';
-
-
+import { useState, useEffect } from "react";
+import {
+  Card,
+  Container,
+  Row,
+  Col,
+  Button,
+  Modal,
+  Alert,
+  Spinner,
+} from "react-bootstrap";
+import { api } from "../services/api";
 
 export default function Home() {
   const [films, setFilms] = useState([]);
@@ -12,30 +19,36 @@ export default function Home() {
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    api.getFilms()
+    api
+      .getFilms()
       .then((data) => setFilms(data.results))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return (
-    <Container fluid className="home px-0">
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
-        <Spinner animation="border" variant="primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </Spinner>
-      </div>
-    </Container>
-  );
+  if (loading)
+    return (
+      <Container fluid className="home px-0">
+        <div
+          className="d-flex justify-content-center align-items-center"
+          style={{ minHeight: "100vh" }}
+        >
+          <Spinner animation="border" variant="primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </Spinner>
+        </div>
+      </Container>
+    );
 
-  if (error) return (
-    <Container fluid className="home px-0">
-      <Alert variant="danger" className="m-3">
-        <Alert.Heading>Error Loading Films</Alert.Heading>
-        <p>{error}</p>
-      </Alert>
-    </Container>
-  );
+  if (error)
+    return (
+      <Container fluid className="home px-0">
+        <Alert variant="danger" className="m-3">
+          <Alert.Heading>Error Loading Films</Alert.Heading>
+          <p>{error}</p>
+        </Alert>
+      </Container>
+    );
 
   return (
     <Container fluid className="home px-0">
@@ -48,10 +61,9 @@ export default function Home() {
           </div>
         </Alert>
 
-      
         <p className="hero-subtitle text-muted">
-          Explore the Star Wars universe through iconic films,
-          episode details, and behind-the-scenes information
+          Explore the Star Wars universe through iconic films, episode details,
+          and behind-the-scenes information
         </p>
       </div>
       <Row>
@@ -67,10 +79,14 @@ export default function Home() {
               <Card.Body>
                 <Card.Title className="film-name">{film.title}</Card.Title>
                 <p className="film-episode">Episode {film.episode_id}</p>
-                <Button variant="primary" className="mt-2 w-100" onClick={() => {
-                  setSelectedFilm(film);
-                  setShowModal(true);
-                }}>
+                <Button
+                  variant="primary"
+                  className="mt-2 w-100"
+                  onClick={() => {
+                    setSelectedFilm(film);
+                    setShowModal(true);
+                  }}
+                >
                   View Details
                 </Button>
               </Card.Body>
@@ -86,11 +102,21 @@ export default function Home() {
         <Modal.Body>
           {selectedFilm && (
             <>
-              <p><strong>Episode ID:</strong> {selectedFilm.episode_id}</p>
-              <p><strong>Opening Craw:</strong> {selectedFilm.opening_crawl}</p>
-              <p><strong>Director:</strong> {selectedFilm.director}</p>
-              <p><strong>Producer:</strong> {selectedFilm.producer}</p>
-              <p><strong>Release Date:</strong> {selectedFilm.release_date}</p>
+              <p>
+                <strong>Episode ID:</strong> {selectedFilm.episode_id}
+              </p>
+              <p>
+                <strong>Opening Craw:</strong> {selectedFilm.opening_crawl}
+              </p>
+              <p>
+                <strong>Director:</strong> {selectedFilm.director}
+              </p>
+              <p>
+                <strong>Producer:</strong> {selectedFilm.producer}
+              </p>
+              <p>
+                <strong>Release Date:</strong> {selectedFilm.release_date}
+              </p>
             </>
           )}
         </Modal.Body>
