@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Card, Container, Row, Col, Button, Badge, Modal, Alert, Spinner, Form } from 'react-bootstrap';
 import { api } from '../services/api';
 
@@ -10,17 +10,39 @@ const PRICING_TIERS = {
 };
 
 export default function About() {
+  const location = useLocation();
   const [films, setFilms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('Failed to load cart from localStorage:', e);
+      return [];
+    }
+  });
   const [showCart, setShowCart] = useState(false);
   const [buyMessage, setBuyMessage] = useState('');
   const [discountCode, setDiscountCode] = useState('');
   const [discountError, setDiscountError] = useState('');
   const [discountApplied, setDiscountApplied] = useState(null);
+  const [purchaseNotification, setPurchaseNotification] = useState(null);
 
-  // Load films from SWAPI
+  // Show notification if navigated from purchase
+  useEffect(() => {
+    if (location.state?.justPurchased) {
+      setPurchaseNotification({
+        filmTitle: location.state.filmTitle,
+        quantity: location.state.quantity,
+        tierName: location.state.tierName,
+        totalPrice: location.state.totalPrice
+      });
+    }
+  }, [location]);
+
+  // Load films from SWAPI + mock
   useEffect(() => {
     loadFilms();
   }, []);
@@ -29,13 +51,114 @@ export default function About() {
     try {
       setLoading(true);
       const data = await api.getFilms();
-      setFilms(data.results);
+      const allFilms = [...data.results, ...mockFilms];
+      setFilms(allFilms);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
+
+  // Mock films to supplement the API data
+  const mockFilms = [
+    {
+      episode_id: 7,
+      title: "Inception",
+      opening_crawl: "Dreams feel real while we're in them...",
+      director: "Christopher Nolan",
+      producer: "Emma Thomas, Christopher Nolan",
+      release_date: "2010-07-16"
+    },
+    {
+      episode_id: 8,
+      title: "The Matrix",
+      opening_crawl: "The Matrix is everywhere...",
+      director: "The Wachowskis",
+      producer: "Joel Silver",
+      release_date: "1999-03-24"
+    },
+    {
+      episode_id: 9,
+      title: "Interstellar",
+      opening_crawl: "Mankind was born on Earth...",
+      director: "Christopher Nolan",
+      producer: "Emma Thomas, Christopher Nolan",
+      release_date: "2014-11-05"
+    },
+    {
+      episode_id: 10,
+      title: "The Grand Budapest Hotel",
+      opening_crawl: "The world was a lot more fun when it was in black and white...",
+      director: "Wes Anderson",
+      producer: "Wes Anderson, Scott Rudin, Steven Rales",
+      release_date: "2014-02-27"
+    },
+    {
+      episode_id: 11,
+      title: "Mad Max: Fury Road",
+      opening_crawl: "The desert claims many things...",
+      director: "George Miller",
+      producer: "Doug Mitchell, George Miller",
+      release_date: "2015-05-15"
+    },
+    {
+      episode_id: 12,
+      title: "Everything Everywhere All at Once",
+      opening_crawl: "You are not special...",
+      director: " Daniels",
+      producer: "Anthony and Joe Russo, Jonathan Wang",
+      release_date: "2022-03-25"
+    },
+    {
+      episode_id: 13,
+      title: "Parasite",
+      opening_crawl: "Plan the dish on your own...",
+      director: "Bong Joon-ho",
+      producer: "Bong Joon-ho, Kwak Sin-ae, Moon Yang-kwon",
+      release_date: "2019-05-30"
+    },
+    {
+      episode_id: 14,
+      title: "The Shawshank Redemption",
+      opening_crawl: "I don't know if these words are for you or for me...",
+      director: "Frank Darabont",
+      producer: "Frank Darabont, Niki Marvin",
+      release_date: "1994-09-23"
+    },
+    {
+      episode_id: 15,
+      title: "Pulp Fiction",
+      opening_crawl: "You know how they say 'Everything's a copycat'?",
+      director: "Quentin Tarantino",
+      producer: "Lawrence Bender, Danny DeVito, Michael Shamberg, Stacey Sher, Richard N. Gladstein, Peter MacGregor-Scott",
+      release_date: "1994-09-10"
+    },
+    {
+      episode_id: 16,
+      title: "The Godfather",
+      opening_crawl: "I believe in America...",
+      director: "Francis Ford Coppola",
+      producer: "Albert S. Ruddy",
+      release_date: "1972-03-24"
+    },
+    {
+      episode_id: 17,
+      title: "Blade Runner 2049",
+      opening_crawl: "You newer models are happy to be the one that's free...",
+      director: "Denis Villeneuve",
+      producer: "Ridley Scott, Andrew A. Kosove, Broderick Johnson, Cynthia Sikes Yorkin",
+      release_date: "2017-10-06"
+    },
+    {
+      episode_id: 18,
+      title: "Get Out",
+      opening_crawl: "Just because you're invited somewhere doesn't mean you're wanted...",
+      director: "Jordan Peele",
+      producer: "Jason Blum, Sean McKittrick, Edward H. Hamm Jr., Jordan Peele, Win Rosenfeld",
+      release_date: "2017-02-24"
+    }
+  ];
 
   // Generate base price for film
   const getBasePrice = (filmId) => {
@@ -44,42 +167,60 @@ export default function About() {
 
   // Add to cart with tier selection
   const addToCart = (film, tier = 'hd', quantity = 1) => {
-    const existing = cart.find(item => item.episode_id === film.episode_id && item.tier === tier);
-    if (existing) {
-      setCart(prev =>
-        prev.map(item =>
-          item.episode_id === film.episode_id && item.tier === tier
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        )
-      );
-    } else {
-      setCart(prev => [...prev, {
-        ...film,
-        quantity,
-        tier,
-        tierName: PRICING_TIERS[tier].name,
-        price: (parseFloat(getBasePrice(film.episode_id)) * PRICING_TIERS[tier].multiplier).toFixed(2)
-      }]);
-    }
+    setCart(prev => {
+      try {
+        const existing = prev.find(item => item.episode_id === film.episode_id && item.tier === tier);
+        let newCart;
+        if (existing) {
+          newCart = prev.map(item =>
+            item.episode_id === film.episode_id && item.tier === tier
+              ? { ...item, quantity: item.quantity + quantity }
+              : item
+          );
+        } else {
+          newCart = [...prev, {
+            ...film,
+            quantity,
+            tier,
+            tierName: PRICING_TIERS[tier].name,
+            price: (parseFloat(getBasePrice(film.episode_id)) * PRICING_TIERS[tier].multiplier).toFixed(2)
+          }];
+        }
+        localStorage.setItem('cart', JSON.stringify(newCart));
+        window.dispatchEvent(new Event('storage'));
+        return newCart;
+      } catch (e) {
+        console.error('Error in addToCart:', e);
+        alert('Failed to add to cart');
+        return prev;
+      }
+    });
   };
 
   // Remove from cart
   const removeFromCart = (index) => {
-    setCart(prev => prev.filter((_, i) => i !== index));
+    setCart(prev => {
+      const newCart = prev.filter((_, i) => i !== index);
+      localStorage.setItem('cart', JSON.stringify(newCart));
+      window.dispatchEvent(new Event('storage'));
+      return newCart;
+    });
   };
 
   // Update quantity
   const updateQuantity = (index, delta) => {
-    setCart(prev =>
-      prev.map((item, i) => {
+    setCart(prev => {
+      const newCart = prev.map((item, i) => {
         if (i === index) {
           const newQty = Math.max(1, item.quantity + delta);
           return { ...item, quantity: newQty };
         }
         return item;
-      })
-    );
+      });
+      localStorage.setItem('cart', JSON.stringify(newCart));
+      window.dispatchEvent(new Event('storage'));
+      return newCart;
+    });
   };
 
   // Get total
@@ -114,11 +255,6 @@ export default function About() {
     }
   };
 
-  // Buy now (direct purchase)
-  const handleBuyNow = (film, tier = 'hd', quantity = 1) => {
-    alert(`Purchasing "${film.title}" in ${PRICING_TIERS[tier].name} quality (x{quantity}) - $${(parseFloat(getBasePrice(film.episode_id)) * PRICING_TIERS[tier].multiplier * quantity).toFixed(2)}`);
-  };
-
   return (
     <Container fluid className="about px-0">
       {/* Header */}
@@ -136,6 +272,14 @@ export default function About() {
       </div>
 
       <Container className="my-4">
+        {/* Purchase Success Notification */}
+        {purchaseNotification && (
+          <Alert variant="success" dismissible onClose={() => setPurchaseNotification(null)} className="mb-3">
+            <Alert.Heading>Purchase Successful!</Alert.Heading>
+            <p>You've purchased {purchaseNotification.quantity}x "{purchaseNotification.filmTitle}" ({purchaseNotification.tierName}) for ${purchaseNotification.totalPrice}. It's in your cart!</p>
+          </Alert>
+        )}
+
         {/* Cart Button */}
         <div className="d-flex justify-content-between align-items-center mb-3">
           <div>
@@ -155,84 +299,92 @@ export default function About() {
           </Button>
         </div>
 
-        {/* Films Grid */}
-        <Row xs={1} md={2} lg={3} xl={4} className="g-4">
-          {films.map((film) => (
-            <Col key={film.episode_id}>
-              <Card className="h-100 film-card shadow-sm">
-                {/* Poster with link to details */}
-                <Link to={`/film/${film.episode_id}`} className="text-decoration-none">
-                  <Card.Img
-                    variant="top"
-                    src={`https://picsum.photos/seed/starwars${film.episode_id}/300/400`}
-                    alt={film.title}
-                    style={{ height: '300px', objectFit: 'cover', cursor: 'pointer' }}
-                  />
-                </Link>
-                <Card.Body className="d-flex flex-column">
-                  <div className="flex-grow-1">
-                    <Link to={`/film/${film.episode_id}`} className="text-decoration-none text-dark">
-                      <Card.Title className="text-truncate" title={film.title} style={{ cursor: 'pointer' }}>
-                        Episode {film.episode_id}: {film.title}
-                      </Card.Title>
-                    </Link>
-                    <Card.Text className="small text-muted mb-1">
-                      <strong>Director:</strong> {film.director}
-                    </Card.Text>
-                    <Card.Text className="small text-muted mb-2">
-                      <strong>Released:</strong> {film.release_date}
-                    </Card.Text>
+        {loading ? (
+          <div className="text-center py-5">
+            <Spinner animation="border" variant="primary" />
+            <p className="mt-2">Loading films...</p>
+          </div>
+        ) : error ? (
+          <Alert variant="danger">{error}</Alert>
+        ) : (
+          <Row xs={1} md={2} lg={3} xl={4} className="g-4">
+            {films.map((film) => (
+              <Col key={film.episode_id}>
+                <Card className="h-100 film-card shadow-sm">
+                  <Link to={`/film/${film.episode_id}`} className="text-decoration-none">
+                    <Card.Img
+                      variant="top"
+                      src={`https://picsum.photos/seed/starwars${film.episode_id}/300/400`}
+                      alt={film.title}
+                      style={{ height: '300px', objectFit: 'cover', cursor: 'pointer' }}
+                    />
+                  </Link>
+                  <Card.Body className="d-flex flex-column">
+                    <div className="flex-grow-1">
+                      <Link to={`/film/${film.episode_id}`} className="text-decoration-none text-dark">
+                        <Card.Title className="text-truncate" title={film.title} style={{ cursor: 'pointer' }}>
+                          Episode {film.episode_id}: {film.title}
+                        </Card.Title>
+                      </Link>
+                      <Card.Text className="small text-muted mb-1">
+                        <strong>Director:</strong> {film.director}
+                      </Card.Text>
+                      <Card.Text className="small text-muted mb-2">
+                        <strong>Released:</strong> {film.release_date}
+                      </Card.Text>
 
-                    {/* Pricing Tiers */}
-                    <div className="mb-2">
-                      <small className="text-muted">Select Quality:</small>
-                      <div className="d-flex gap-1 flex-wrap">
-                        {Object.entries(PRICING_TIERS).map(([key, tier]) => (
-                          <Button
-                            key={key}
-                            variant={key === 'hd' ? 'primary' : 'outline-secondary'}
-                            size="sm"
-                            className="px-2 py-1"
-                            onClick={() => addToCart(film, key, 1)}
-                            title={`Add ${tier.name} to cart - $${(parseFloat(getBasePrice(film.episode_id)) * tier.multiplier).toFixed(2)}`}
-                          >
-                            {tier.name}
-                          </Button>
-                        ))}
+                      {/* Pricing Tiers */}
+                      <div className="mb-2">
+                        <small className="text-muted">Select Quality:</small>
+                        <div className="d-flex gap-1 flex-wrap">
+                          {Object.entries(PRICING_TIERS).map(([key, tier]) => (
+                            <Button
+                              key={key}
+                              variant={key === 'hd' ? 'primary' : 'outline-secondary'}
+                              size="sm"
+                              className="px-2 py-1"
+                              onClick={() => addToCart(film, key, 1)}
+                              title={`Add ${tier.name} to cart - $${(parseFloat(getBasePrice(film.episode_id)) * tier.multiplier).toFixed(2)}`}
+                            >
+                              {tier.name}
+                            </Button>
+                          ))}
+                        </div>
                       </div>
+
+                      {/* Base Price */}
+                      <Card.Text className="mt-2">
+                        <small className="text-muted">From:</small>
+                        <h6 className="text-primary fw-bold mb-0">${getBasePrice(film.episode_id)} (HD)</h6>
+                      </Card.Text>
                     </div>
 
-                    {/* Base Price */}
-                    <Card.Text className="mt-2">
-                      <small className="text-muted">From:</small>
-                      <h6 className="text-primary fw-bold mb-0">${getBasePrice(film.episode_id)} (HD)</h6>
-                    </Card.Text>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="d-grid gap-2 mt-2">
-                    <Button
-                      variant="success"
-                      size="sm"
-                      onClick={() => handleBuyNow(film, 'hd', 1)}
-                    >
-                      💳 Buy Now
-                    </Button>
-                    <Link
-                      to={`/film/${film.episode_id}`}
-                      className="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center"
-                      onClick={(e) => {
-                        console.log('Navigating to film:', film.episode_id, 'title:', film.title);
-                      }}
-                    >
-                      📄 View Details
-                    </Link>
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-          ))}
-        </Row>
+                    {/* Action Buttons */}
+                    <div className="d-grid gap-2 mt-2">
+                      <Button
+                        variant="success"
+                        size="sm"
+                        onClick={() => {
+                          // Direct purchase: add default HD quantity 1, then direct to details to customize
+                          addToCart(film, 'hd', 1);
+                          alert(`Added "${film.title}" to cart!`);
+                        }}
+                      >
+                        💳 Quick Add to Cart
+                      </Button>
+                      <Link
+                        to={`/film/${film.episode_id}`}
+                        className="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center"
+                      >
+                        📄 View Details
+                      </Link>
+                    </div>
+                  </Card.Body>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        )}
       </Container>
 
       {/* Cart Modal */}
@@ -347,10 +499,12 @@ export default function About() {
               variant="primary"
               onClick={() => {
                 alert(`Thank you for your order! Total: $${getTotal()}`);
+                localStorage.removeItem('cart');
                 setCart([]);
                 setDiscountApplied(null);
                 setDiscountCode('');
                 setShowCart(false);
+                window.dispatchEvent(new Event('storage'));
               }}
             >
               Checkout

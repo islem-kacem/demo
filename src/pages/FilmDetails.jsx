@@ -23,6 +23,106 @@ export default function FilmDetails() {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
 
+  // Mock films to supplement the API data
+  const mockFilms = [
+    {
+      episode_id: 7,
+      title: "Inception",
+      opening_crawl: "Dreams feel real while we're in them...",
+      director: "Christopher Nolan",
+      producer: "Emma Thomas, Christopher Nolan",
+      release_date: "2010-07-16"
+    },
+    {
+      episode_id: 8,
+      title: "The Matrix",
+      opening_crawl: "The Matrix is everywhere...",
+      director: "The Wachowskis",
+      producer: "Joel Silver",
+      release_date: "1999-03-24"
+    },
+    {
+      episode_id: 9,
+      title: "Interstellar",
+      opening_crawl: "Mankind was born on Earth...",
+      director: "Christopher Nolan",
+      producer: "Emma Thomas, Christopher Nolan",
+      release_date: "2014-11-05"
+    },
+    {
+      episode_id: 10,
+      title: "The Grand Budapest Hotel",
+      opening_crawl: "The world was a lot more fun when it was in black and white...",
+      director: "Wes Anderson",
+      producer: "Wes Anderson, Scott Rudin, Steven Rales",
+      release_date: "2014-02-27"
+    },
+    {
+      episode_id: 11,
+      title: "Mad Max: Fury Road",
+      opening_crawl: "The desert claims many things...",
+      director: "George Miller",
+      producer: "Doug Mitchell, George Miller",
+      release_date: "2015-05-15"
+    },
+    {
+      episode_id: 12,
+      title: "Everything Everywhere All at Once",
+      opening_crawl: "You are not special...",
+      director: " Daniels",
+      producer: "Anthony and Joe Russo, Jonathan Wang",
+      release_date: "2022-03-25"
+    },
+    {
+      episode_id: 13,
+      title: "Parasite",
+      opening_crawl: "Plan the dish on your own...",
+      director: "Bong Joon-ho",
+      producer: "Bong Joon-ho, Kwak Sin-ae, Moon Yang-kwon",
+      release_date: "2019-05-30"
+    },
+    {
+      episode_id: 14,
+      title: "The Shawshank Redemption",
+      opening_crawl: "I don't know if these words are for you or for me...",
+      director: "Frank Darabont",
+      producer: "Frank Darabont, Niki Marvin",
+      release_date: "1994-09-23"
+    },
+    {
+      episode_id: 15,
+      title: "Pulp Fiction",
+      opening_crawl: "You know how they say 'Everything's a copycat'?",
+      director: "Quentin Tarantino",
+      producer: "Lawrence Bender, Danny DeVito, Michael Shamberg, Stacey Sher, Richard N. Gladstein, Peter MacGregor-Scott",
+      release_date: "1994-09-10"
+    },
+    {
+      episode_id: 16,
+      title: "The Godfather",
+      opening_crawl: "I believe in America...",
+      director: "Francis Ford Coppola",
+      producer: "Albert S. Ruddy",
+      release_date: "1972-03-24"
+    },
+    {
+      episode_id: 17,
+      title: "Blade Runner 2049",
+      opening_crawl: "You newer models are happy to be the one that's free...",
+      director: "Denis Villeneuve",
+      producer: "Ridley Scott, Andrew A. Kosove, Broderick Johnson, Cynthia Sikes Yorkin",
+      release_date: "2017-10-06"
+    },
+    {
+      episode_id: 18,
+      title: "Get Out",
+      opening_crawl: "Just because you're invited somewhere doesn't mean you're wanted...",
+      director: "Jordan Peele",
+      producer: "Jason Blum, Sean McKittrick, Edward H. Hamm Jr., Jordan Peele, Win Rosenfeld",
+      release_date: "2017-02-24"
+    }
+  ];
+
   // Debug logging
   console.log('FilmDetails mounted with id:', id);
 
@@ -35,8 +135,11 @@ export default function FilmDetails() {
       console.log('Loading film with id:', id);
       setLoading(true);
       const films = await api.getFilms();
-      console.log('Available films:', films.results.map(f => f.episode_id));
-      const found = films.results.find(f => f.episode_id === parseInt(id));
+      console.log('Available films from API:', films.results.map(f => f.episode_id));
+      // Combine API films with mock films
+      const allFilms = [...films.results, ...mockFilms];
+      console.log('Total films available:', allFilms.length);
+      const found = allFilms.find(f => f.episode_id === parseInt(id));
       console.log('Found film:', found);
       if (found) {
         setFilm(found);
@@ -90,19 +193,55 @@ export default function FilmDetails() {
     setDiscountCode('');
   };
 
+  // Add item to cart
+  const addToCart = (film, tier, quantity) => {
+    try {
+      const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+      const existing = cart.find(item => item.episode_id === film.episode_id && item.tier === tier);
+      if (existing) {
+        existing.quantity += quantity;
+      } else {
+        const basePrice = (film.episode_id * 12.99).toFixed(2);
+        cart.push({
+          ...film,
+          quantity,
+          tier,
+          tierName: PRICING_TIERS[tier].name,
+          price: (parseFloat(basePrice) * PRICING_TIERS[tier].multiplier).toFixed(2)
+        });
+      }
+      localStorage.setItem('cart', JSON.stringify(cart));
+      console.log('Cart updated:', cart);
+      window.dispatchEvent(new Event('storage'));
+    } catch (e) {
+      console.error('Error adding to cart:', e);
+      alert('Failed to add to cart. Please try again.');
+    }
+  };
+
   const handlePurchase = () => {
     setShowPurchaseModal(true);
   };
 
   const confirmPurchase = () => {
+    addToCart(film, selectedTier, quantity);
     setShowPurchaseModal(false);
+    const finalPrice = getFinalPrice();
     setPurchaseSuccess(true);
     setTimeout(() => {
       setPurchaseSuccess(false);
       setQuantity(1);
       setDiscountApplied(null);
       setDiscountCode('');
-      navigate('/about');
+      navigate('/about', {
+        state: {
+          justPurchased: true,
+          filmTitle: film.title,
+          quantity,
+          tierName: PRICING_TIERS[selectedTier].name,
+          totalPrice: finalPrice
+        }
+      });
     }, 2000);
   };
 
