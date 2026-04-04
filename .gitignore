@@ -83,3 +83,6 @@ server/prisma/dev.db
 *.njsproj
 *.sln
 *.sw?
+
+*storybook.log
+storybook-static
