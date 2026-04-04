@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Card, Container, Row, Col, Button, Alert, Spinner } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
+import { Card, Container, Row, Col, Button, Alert, Spinner, Form } from 'react-bootstrap';
 import { api } from '../services/api';
+import { useAuth } from '../contexts/AuthContext.jsx';
 
 
 export default function Users() {
@@ -14,24 +16,15 @@ export default function Users() {
   const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true);
-  const [user, setUser] = useState(null);
+  const { user, loading: authLoading, login, signup } = useAuth();
+  const navigate = useNavigate();
 
-  // Check if user is already logged in
+  // Redirect when user becomes available (after login/signup)
   useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
-  const checkAuthStatus = async () => {
-    try {
-      const data = await api.me();
-      setUser(data.user);
-    } catch (err) {
-      // Not logged in, ignore
-    } finally {
-      setCheckingAuth(false);
+    if (!authLoading && user) {
+      navigate('/profile', { replace: true });
     }
-  };
+  }, [user, authLoading, navigate]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -47,6 +40,7 @@ export default function Users() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('Form submitted', { isSignUp, formData });
     setError('');
     setSuccess('');
 
@@ -64,120 +58,34 @@ export default function Users() {
       setLoading(true);
 
       if (isSignUp) {
-        await api.signup(formData);
-        setSuccess('Account created successfully!');
-        // Auto-login after signup - get user data
-        setTimeout(async () => {
-          try {
-            const data = await api.me();
-            setUser(data.user);
-          } catch (err) {
-            // Switch to login view
-            setIsSignUp(false);
-          }
-        }, 500);
+        console.log('Attempting signup...');
+        await signup(formData.name, formData.email, formData.password);
+        console.log('Signup successful, switching to login');
+        setSuccess('Account created successfully! Please log in.');
+        setIsSignUp(false);
+        setFormData({ name: '', email: '', password: '' });
       } else {
-        await api.login(formData);
-        // Get user data after login
-        const data = await api.me();
-        setUser(data.user);
-        setSuccess('Login successful!');
+        console.log('Attempting login...');
+        await login(formData.email, formData.password);
+        console.log('Login successful, redirecting...');
+        // Navigation will happen automatically when user state updates
       }
-
-      // Reset form
-      setFormData({ name: '', email: '', password: '' });
     } catch (error) {
+      console.error('Authentication error:', error);
       setError(error.message || 'Authentication failed');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await api.logout();
-      setUser(null);
-      setSuccess('Logged out successfully');
-      setIsSignUp(true);
-    } catch (error) {
-      setError(error.message || 'Logout failed');
-    }
-  };
-
-  const handleProfileUpdate = async () => {
-    try {
-      const data = await api.updateProfile({
-        name: formData.name || user.name,
-        bio: formData.bio || user.profile?.bio || ''
-      });
-      setUser(data.user);
-      setSuccess('Profile updated successfully!');
-    } catch (error) {
-      setError(error.message || 'Update failed');
-    }
-  };
-
-  // Show loading while checking auth status
-  if (checkingAuth) {
+  // Show loading while checking auth
+  if (authLoading) {
     return (
       <Container fluid className="users px-0">
         <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
           <Spinner animation="border" variant="primary" role="status">
             <span className="visually-hidden">Loading...</span>
           </Spinner>
-        </div>
-      </Container>
-    );
-  }
-
-  // If user is authenticated, show profile
-  if (user) {
-    return (
-      <Container fluid className="users px-0">
-        <div className="profile-container py-5">
-          <Row className="justify-content-center">
-            <Col md={8} lg={6}>
-              <Card className="shadow-lg">
-                <Card.Body className="text-center">
-                  {/* Avatar */}
-                  <div className="mb-4">
-                    {user.profile?.avatarUrl ? (
-                      <img
-                        src={user.profile.avatarUrl}
-                        alt={user.name || user.email}
-                        className="rounded-circle"
-                        style={{ width: '120px', height: '120px', objectFit: 'cover' }}
-                      />
-                    ) : (
-                      <div
-                        className="rounded-circle d-inline-flex align-items-center justify-content-center bg-primary text-white"
-                        style={{ width: '120px', height: '120px', fontSize: '3rem' }}
-                      >
-                        {(user.name || user.email)[0].toUpperCase()}
-                      </div>
-                    )}
-                  </div>
-
-                  <Card.Title className="mb-2">{user.name || 'No name set'}</Card.Title>
-                  <Card.Subtitle className="mb-3 text-muted">{user.email}</Card.Subtitle>
-
-                  {user.profile?.bio && (
-                    <Card.Text className="mb-4">{user.profile.bio}</Card.Text>
-                  )}
-
-                  <Alert variant={success ? 'success' : 'danger'} show={!!(error || success)} className="mb-3">
-                    {error || success}
-                  </Alert>
-
-                  <div className="d-grid gap-2">
-                    <Button variant="primary" onClick={handleLogout}>
-                      Sign Out
-                    </Button>
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
         </div>
       </Container>
     );

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, Button, Badge, Row, Col, ListGroup, Spinner, Alert, Modal, Form } from 'react-bootstrap';
+import { Card, Container, Button, Badge, Row, Col, ListGroup, Spinner, Alert, Modal, Form } from 'react-bootstrap';
 import { api } from '../services/api';
 
 const PRICING_TIERS = {

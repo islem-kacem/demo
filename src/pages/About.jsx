@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Card, Container, Row, Col, Button, Badge, Modal, Alert, Spinner, Form } from "react-bootstrap";
+import { Card, Container, Row, Col, Button, Badge, Modal, Alert, Spinner, Form, Dropdown } from "react-bootstrap";
 import { api } from "../services/api";
 const PRICING_TIERS = {
   sd: { name: "SD", multiplier: 0.8, label: "Standard Definition" },
@@ -302,23 +302,27 @@ export default function About() {
                       <Card.Text className="small text-muted mb-2">
                         <strong>Released:</strong> {film.release_date}
                       </Card.Text>
-                      {/* Pricing Tiers */}
+                      {/* Quality Selector Dropdown */}
                       <div className="mb-2">
                         <small className="text-muted">Select Quality:</small>
-                        <div className="d-flex gap-1 flex-wrap">
-                          {Object.entries(PRICING_TIERS).map(([key, tier]) => (
-                            <Button
-                              key={key}
-                              variant={key === "hd" ? "primary" : "outline-secondary"}
-                              size="sm"
-                              className="px-2 py-1"
-                              onClick={() => addToCart(film, key, 1)}
-                              title={`Add ${tier.name} to cart - $${(parseFloat(getBasePrice(film.episode_id)) * tier.multiplier).toFixed(2)}`}
-                            >
-                              {tier.name}
-                            </Button>
-                          ))}
-                        </div>
+                        <Dropdown className="w-100">
+                          <Dropdown.Toggle variant="outline-secondary" size="sm" className="w-100 text-start">
+                            <span id="selected-quality">HD - ${(parseFloat(getBasePrice(film.episode_id)) * PRICING_TIERS.hd.multiplier).toFixed(2)}</span>
+                          </Dropdown.Toggle>
+                          <Dropdown.Menu className="w-100">
+                            {Object.entries(PRICING_TIERS).map(([key, tier]) => (
+                              <Dropdown.Item
+                                key={key}
+                                onClick={() => addToCart(film, key, 1)}
+                              >
+                                <div className="d-flex justify-content-between align-items-center">
+                                  <span>{tier.name}</span>
+                                  <span className="text-muted">${(parseFloat(getBasePrice(film.episode_id)) * tier.multiplier).toFixed(2)}</span>
+                                </div>
+                              </Dropdown.Item>
+                            ))}
+                          </Dropdown.Menu>
+                        </Dropdown>
                       </div>
                       {/* Base Price */}
                       <Card.Text className="mt-2">

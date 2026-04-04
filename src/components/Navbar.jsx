@@ -1,7 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext.jsx';
 
 export default function Navbar() {
   const location = useLocation();
+  const { user } = useAuth();
 
   return (
     <nav className="navbar fixed-top w-100">
@@ -15,7 +17,11 @@ export default function Navbar() {
             <Link to="/about" className={location.pathname === '/about' ? 'active' : ''}>Shop</Link>
           </li>
           <li>
-            <Link to="/users" className={location.pathname === '/users' ? 'active' : ''}>Users</Link>
+            {user ? (
+              <Link to="/profile" className={location.pathname === '/profile' ? 'active' : ''}>Profile</Link>
+            ) : (
+              <Link to="/users" className={location.pathname === '/users' ? 'active' : ''}>Sign In</Link>
+            )}
           </li>
         </ul>
       </div>
