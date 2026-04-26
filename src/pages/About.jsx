@@ -49,7 +49,10 @@ export default function About() {
       const allFilms = [...data.results, ...mockFilms];
       setFilms(allFilms);
     } catch (err) {
-      setError(err.message);
+      // If fetching from SWAPI fails, fall back to mock films only
+      console.warn('SWAPI fetch failed, using mock data:', err);
+      setFilms(mockFilms);
+      setError(''); // clear error since we have data
     } finally {
       setLoading(false);
     }
